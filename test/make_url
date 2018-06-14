@@ -1,0 +1,71 @@
+#!/bin/bash
+set -e
+
+PASSES=0
+FAILS=0
+
+assert() {
+  if [[ $1 == $2 ]]; then
+    ((++PASSES))
+  else
+    echo "$1 != $2"
+    ((++FAILS))
+  fi
+}
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEST=1 . $DIR/../bin/g.bash
+
+echo "test #$((++I))"
+
+make_url "repo"
+assert "$G_URL" "https://github.com/repo/repo"
+assert "$G_OWNER" "repo"
+assert "$G_NAME" "repo"
+
+echo "test #$((++I))"
+
+make_url "owner/repo"
+assert "$G_URL" "https://github.com/owner/repo"
+assert "$G_OWNER" "owner"
+assert "$G_NAME" "repo"
+
+echo "test #$((++I))"
+
+make_url "gitlab.com/owner/repo"
+assert "$G_URL" "https://gitlab.com/owner/repo"
+assert "$G_OWNER" "owner"
+assert "$G_NAME" "repo"
+
+echo "test #$((++I))"
+
+make_url "http://gitlab.com/owner/repo"
+assert "$G_URL" "http://gitlab.com/owner/repo"
+assert "$G_OWNER" "owner"
+assert "$G_NAME" "repo"
+
+echo "test #$((++I))"
+
+make_url "https://gitlab.com/owner/repo"
+assert "$G_URL" "https://gitlab.com/owner/repo"
+assert "$G_OWNER" "owner"
+assert "$G_NAME" "repo"
+
+echo "test #$((++I))"
+
+make_url "https://gitlab.com/owner/repo.git"
+assert "$G_URL" "https://gitlab.com/owner/repo.git"
+assert "$G_OWNER" "owner"
+assert "$G_NAME" "repo"
+
+echo "test #$((++I))"
+
+make_url "git@github.com:owner/repo.git"
+assert "$G_URL" "git@github.com:owner/repo.git"
+assert "$G_OWNER" "owner"
+assert "$G_NAME" "repo"
+
+echo "ok: $PASSES ng: $FAILS"
+if [ $FAILS -gt 0 ]; then
+  exit 1;
+fi

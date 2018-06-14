@@ -1,0 +1,84 @@
+#!/bin/bash
+
+if [ -z "$G_ROOT" ]; then
+  G_ROOT="$HOME/projects"
+fi
+
+if [ -n "$G_USE_SSH" ]; then
+  G_USE_SSH=1
+fi
+
+make_url() {
+  S=[a-zA-Z0-9.\_\-] # hyphen must be located at the end
+  if [[ $1 =~ https?:.+/($S+)/($S+)\.git$ ]]; then
+    G_URL=$1
+    G_OWNER=${BASH_REMATCH[1]}
+    G_NAME=${BASH_REMATCH[2]}
+  elif [[ $1 =~ https?:.+/($S+)/($S+)$ ]]; then
+    G_URL=$1
+    G_OWNER=${BASH_REMATCH[1]}
+    G_NAME=${BASH_REMATCH[2]}
+  elif [[ $1 =~ .+:($S+)/($S+)\.git$ ]]; then
+    G_URL=$1
+    G_OWNER=${BASH_REMATCH[1]}
+    G_NAME=${BASH_REMATCH[2]}
+  elif [[ $1 =~ .+:($S+)/($S+)$ ]]; then
+    G_URL=$1
+    G_OWNER=${BASH_REMATCH[1]}
+    G_NAME=${BASH_REMATCH[2]}
+  elif [[ $1 =~ $S+/($S+)/($S+)?$ ]]; then
+    G_URL=https://$1
+    G_OWNER=${BASH_REMATCH[1]}
+    G_NAME=${BASH_REMATCH[2]}
+  elif [[ $1 =~ ($S+)/($S+)?$ ]]; then
+    if [ $G_USE_SSH ]; then
+      G_URL=git@github.com:$1
+    else
+      G_URL=https://github.com/$1
+    fi
+    G_OWNER=${BASH_REMATCH[1]}
+    G_NAME=${BASH_REMATCH[2]}
+  elif [[ $1 =~ ($S+)?$ ]]; then
+    if [ $G_USE_SSH ]; then
+      G_URL=git@github.com:$1/$1
+    else
+      G_URL=https://github.com/$1/$1
+    fi
+    G_OWNER=${BASH_REMATCH[1]}
+    G_NAME=${BASH_REMATCH[1]}
+  else
+    echo "Could not recognize repository: $1"
+    return
+  fi
+
+  G_PATH=$G_ROOT/$G_OWNER/$G_NAME
+}
+
+if [ -n "$TEST" ]; then
+  return
+fi
+
+if [ -z "$1" ]; then
+  cat << USAGE
+Usage: g REPOSITORY
+
+Example:
+  g akkyie/g
+  g github.com/akkyie/g
+  g http://github.com/akkyie/g
+USAGE
+  exit
+fi
+
+make_url $1
+
+if [ -d $G_PATH ]; then
+  cd $G_PATH
+  exec $SHELL
+elif [ -e $G_PATH ]; then
+  echo "error: $G_PATH exists but is not directory" &>2
+else
+  git clone $G_URL $G_PATH
+  cd $G_PATH
+  exec $SHELL
+fi
