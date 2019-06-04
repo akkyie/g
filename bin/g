@@ -72,13 +72,17 @@ fi
 
 make_url $1
 
+open_shell() {
+  exec $SHELL -l
+}
+
 if [ -d $G_PATH ]; then
   cd $G_PATH
-  exec $SHELL
+  open_shell
 elif [ -e $G_PATH ]; then
   echo "error: $G_PATH exists but is not directory" &>2
 else
   git clone $G_URL $G_PATH
   cd $G_PATH
-  exec $SHELL
+  open_shell
 fi
